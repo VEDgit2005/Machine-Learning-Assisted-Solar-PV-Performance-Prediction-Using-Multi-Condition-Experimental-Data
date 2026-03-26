@@ -82,3 +82,89 @@ print("\n📊 Final Comparison:")
 print(results_df)
 
 results_df.to_csv("model_comparison_results.csv", index=False)
+
+# ===============================
+# 7. FEATURE IMPORTANCE (Random Forest)
+# ===============================
+import matplotlib.pyplot as plt
+
+rf_model = models["Random Forest"]
+
+importances = rf_model.feature_importances_
+feature_names = X.columns
+
+importance_df = pd.DataFrame({
+    'Feature': feature_names,
+    'Importance': importances
+}).sort_values(by='Importance', ascending=False)
+
+print("\n📊 Feature Importance:")
+print(importance_df)
+
+# Plot Feature Importance
+plt.figure()
+plt.barh(importance_df['Feature'], importance_df['Importance'])
+plt.gca().invert_yaxis()
+plt.title("Feature Importance (Random Forest)")
+plt.xlabel("Importance")
+plt.ylabel("Feature")
+plt.savefig("feature_importance.png")
+plt.show()
+
+
+# ===============================
+# 8. PREDICTED VS ACTUAL
+# ===============================
+y_pred_rf = rf_model.predict(X_test)
+
+plt.figure()
+plt.scatter(y_test, y_pred_rf)
+plt.xlabel("Actual Tilt")
+plt.ylabel("Predicted Tilt")
+plt.title("Actual vs Predicted (Random Forest)")
+plt.savefig("actual_vs_predicted.png")
+plt.show()
+
+
+# ===============================
+# 9. ERROR DISTRIBUTION
+# ===============================
+errors = y_test - y_pred_rf
+
+plt.figure()
+plt.hist(errors, bins=50)
+plt.title("Error Distribution")
+plt.xlabel("Prediction Error")
+plt.ylabel("Frequency")
+plt.savefig("error_distribution.png")
+plt.show()
+
+
+# ===============================
+# 10. MERGING WITH CLEANED DATASET
+# ===============================
+try:
+    df_real = pd.read_csv("SOLAR_PV_CLEANED_DATASET.csv")
+    df_pvlib = pd.read_csv("pvlib_optimal_tilt_dataset.csv")
+
+    # Try datetime merge first
+    if 'datetime' in df_real.columns:
+        print("\n🔗 Merging using datetime...")
+
+        df_real['datetime'] = pd.to_datetime(df_real['datetime'])
+        df_pvlib['datetime'] = pd.to_datetime(df_pvlib['datetime'])
+
+        merged = pd.merge(df_real, df_pvlib, on='datetime', how='inner')
+
+    else:
+        print("\n⚠️ No datetime column, merging using month...")
+
+        merged = pd.merge(df_real, df_pvlib, on='month', how='inner')
+
+    merged.to_csv("merged_dataset.csv", index=False)
+
+    print("✅ Merged dataset created: merged_dataset.csv")
+    print(merged.head())
+
+except Exception as e:
+    print("\n❌ Merge failed:", e)
